@@ -13,6 +13,7 @@ builder.Services.Configure<BookStoreDbSettings>(
 
 builder.Services.AddSingleton<IMongoConnection, MongoConnection>();
 builder.Services.AddSingleton<IBookService, BookService>();
+builder.Services.AddControllers();
 
 builder.Services.AddCors(options =>
 {
@@ -30,38 +31,17 @@ var app = builder.Build();
 
 app.UseCors("AllowOrigin");
 
+app.UseHttpsRedirection();
+app.UseAuthentication();
+app.UseAuthorization();
+app.MapControllers();
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
-app.MapGet("/books", async ([FromServices] IBookService service) =>
-{
-    return await service.GetAllBooks();
-});
-
-app.MapGet("/books/{id}", async ([FromServices] IBookService service, string id) =>
-{
-    return await service.GetBook(id);
-});
-
-app.MapDelete("/books/{id}", async ([FromServices] IBookService service, string id) =>
-{
-    await service.Delete(id);
-});
-
-app.MapPut("/books/{id}", async ([FromServices] IBookService service, string id, Book book) =>
-{
-    return await service.Update(id, book);
-});
-
-app.MapPost("/books", async ([FromServices] IBookService service, Book book) =>
-{
-    return await service.Add(book);
-});
-
 
 app.Run();
 
