@@ -1,13 +1,21 @@
-﻿using MongoDB.Driver;
+﻿using AngularServer.Models;
+using Microsoft.Extensions.Options;
+using MongoDB.Driver;
 
 namespace AngularServer.Utility;
 
-public class MongoConnection
+public class MongoConnection : IMongoConnection
 {
-   public static IMongoCollection<T> GetBooksCollection<T>(string collectionName) where T : class
+    private readonly BookStoreDbSettings settings;
+
+    public MongoConnection(IOptions<BookStoreDbSettings> options)
     {
-        var client = new MongoClient("mongodb://localhost:27017");
-        var db = client.GetDatabase("AngularServerDB");
-        return db.GetCollection<T>(collectionName);
+        settings = options.Value;
+    }
+    public IMongoCollection<T> GetCollection<T>(Func<BookStoreDbSettings, string> collection) where T : class
+    {
+        var client = new MongoClient(settings.ConnectionString);
+        var db = client.GetDatabase(settings.DatabaseName);
+        return db.GetCollection<T>(collection(settings));
     }
 }

@@ -1,10 +1,18 @@
+using AngularServer.Interfaces;
 using AngularServer.Models;
+using AngularServer.Services;
 using AngularServer.Utility;
-using MongoDB.Driver;
+using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+builder.Services.Configure<BookStoreDbSettings>(
+        builder.Configuration.GetSection(nameof(BookStoreDbSettings)));
+
+builder.Services.AddSingleton<IMongoConnection, MongoConnection>();
+builder.Services.AddSingleton<IBookService, BookService>();
 
 builder.Services.AddCors(options =>
 {
@@ -29,35 +37,29 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.MapGet("/books", async () =>
+app.MapGet("/books", async ([FromServices] IBookService service) =>
 {
-    var collection = MongoConnection.GetBooksCollection<Book>("Books");
-    return await collection.Find(x => true).ToListAsync();
+    return await service.GetAllBooks();
 });
 
-app.MapGet("/books/{id}", async (string id) =>
+app.MapGet("/books/{id}", async ([FromServices] IBookService service, string id) =>
 {
-    var collection = MongoConnection.GetBooksCollection<Book>("Books");
-    return await collection.Find(x => x.Id == id).FirstOrDefaultAsync();
+    return await service.GetBook(id);
 });
 
-app.MapDelete("/books/{id}", async (string id) =>
+app.MapDelete("/books/{id}", async ([FromServices] IBookService service, string id) =>
 {
-    var collection = MongoConnection.GetBooksCollection<Book>("Books");
-    return await collection.DeleteOneAsync(x => x.Id == id);
+    await service.Delete(id);
 });
 
-app.MapPut("/books/{id}", async (string id, Book book) =>
+app.MapPut("/books/{id}", async ([FromServices] IBookService service, string id, Book book) =>
 {
-    var collection = MongoConnection.GetBooksCollection<Book>("Books");
-    return await collection.ReplaceOneAsync(x => x.Id == id, book);
+    return await service.Update(id, book);
 });
 
-app.MapPost("/books", async (Book book) =>
+app.MapPost("/books", async ([FromServices] IBookService service, Book book) =>
 {
-    var collection = MongoConnection.GetBooksCollection<Book>("Books");
-    await collection.InsertOneAsync(book);
-    return book;
+    return await service.Add(book);
 });
 
 
